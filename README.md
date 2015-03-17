@@ -1,4 +1,4 @@
-# hawkeye - Web page monitor
+# Hawkeye
 
 Hawkeye contains hawk and snake.
 
