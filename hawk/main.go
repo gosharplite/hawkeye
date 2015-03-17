@@ -1,20 +1,25 @@
 package main
 
 import (
-	"flag"
-	//	"fmt"
+	"bytes"
 	"errors"
+	"flag"
 	"log"
 	"net/http"
+	"net/smtp"
 	"net/url"
 	"runtime"
-	//	"strings"
 	"strconv"
+	"text/template"
 	"time"
 )
 
 type flags struct {
-	url url.URL
+	url        url.URL
+	caption    string
+	from_Gmail string
+	to_mail    string
+	password   string
 }
 
 func main() {
@@ -50,6 +55,8 @@ func main() {
 
 			if err != nil {
 				log.Printf("result: %v", err)
+
+				go sendGMail(f, err)
 			}
 
 		}(f.url)
@@ -60,16 +67,34 @@ func main() {
 
 func getFlags() (flags, error) {
 
-	u := flag.String("url", "http://localhost:8080", "snake url")
+	// parse
+	u := flag.String("u", "http://localhost:8080", "snake url")
+	c := flag.String("c", "cobra", "caption")
+	f := flag.String("f", "sender@gmail.com", "gmail sender")
+	t := flag.String("t", "receiver@example.com", "email receiver")
+	p := flag.String("p", "123456", "gmail password")
 
 	flag.Parse()
 
+	// url
 	ur, err := url.Parse(*u)
 	if err != nil {
 		return flags{}, err
 	}
 
-	return flags{*ur}, nil
+	// caption
+	ca := *c
+
+	// from_Gmail
+	fr := *f
+
+	// to_mail
+	to := *t
+
+	//password
+	pw := *p
+
+	return flags{*ur, ca, fr, to, pw}, nil
 }
 
 func looking(url url.URL, c chan error) {
@@ -100,4 +125,62 @@ func looking(url url.URL, c chan error) {
 	}
 
 	c <- nil
+}
+
+func sendGMail(f flags, e error) {
+
+	auth := smtp.PlainAuth(
+		"",
+		f.from_Gmail,
+		f.password,
+		"smtp.gmail.com",
+	)
+
+	type SmtpTemplateData struct {
+		From    string
+		To      string
+		Subject string
+		Body    string
+	}
+
+	const emailTemplate = `From: {{.From}}
+To: {{.To}}
+Subject: {{.Subject}}
+
+{{.Body}}
+`
+
+	var err error
+	var doc bytes.Buffer
+
+	context := &SmtpTemplateData{
+		f.from_Gmail,
+		f.to_mail,
+		f.caption + " " + time.Now().Format("01/02 15:04:05"),
+		e.Error(),
+	}
+
+	t := template.New("emailTemplate")
+	t, err = t.Parse(emailTemplate)
+	if err != nil {
+		log.Printf("error trying to parse mail template")
+		return
+	}
+	err = t.Execute(&doc, context)
+	if err != nil {
+		log.Printf("error trying to execute mail template")
+		return
+	}
+
+	err = smtp.SendMail(
+		"smtp.gmail.com:587",
+		auth,
+		f.from_Gmail,
+		[]string{f.to_mail},
+		doc.Bytes(),
+	)
+	if err != nil {
+		log.Printf("smtp.SendMail err: " + err.Error())
+		return
+	}
 }
