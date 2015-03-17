@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +18,9 @@ type flags struct {
 
 func main() {
 
-	log.Printf("Agent http server start...")
+	runtime.GOMAXPROCS(runtime.NumCPU()*2 + 1)
+
+	log.Printf("Snake is moving...")
 
 	f, err := getFlags()
 	if err != nil {
@@ -34,7 +37,7 @@ func main() {
 
 func getFlags() (flags, error) {
 
-	u := flag.String("url", "http://localhost:8080", "agent url")
+	u := flag.String("url", "http://localhost:8080", "snake url")
 
 	flag.Parse()
 
@@ -48,6 +51,8 @@ func getFlags() (flags, error) {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+
+	log.Printf("Someone is looking!")
 
 	fmt.Fprint(w, r.Host+","+strconv.FormatInt(time.Now().UnixNano(), 10))
 }
