@@ -68,7 +68,7 @@ func main() {
 func getFlags() (flags, error) {
 
 	// parse
-	u := flag.String("u", "http://localhost:8080", "snake url")
+	u := flag.String("u", "http://localhost:8080", "hawk url")
 	c := flag.String("c", "cobra", "caption")
 	f := flag.String("f", "sender@gmail.com", "gmail sender")
 	t := flag.String("t", "receiver@example.com", "email receiver")
