@@ -59,15 +59,15 @@ func main() {
 				go sendGMail(f, err)
 				log.Printf("result: %v", err)
 
-				err, ok := <-c
+				err2, ok := <-c
 				if ok {
 
-					if err == nil {
-						err = errors.New("timeout without error")
+					if err2 == nil {
+						err2 = errors.New("timeout without error")
 					}
 
-					go sendGMail(f, err)
-					log.Printf("result: %v", err)
+					go sendGMail(f, err2)
+					log.Printf("result: %v", err2)
 				}
 			}
 
