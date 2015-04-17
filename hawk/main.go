@@ -51,12 +51,19 @@ func main() {
 
 			case err = <-c:
 				log.Printf("looking: " + time.Since(t).String())
+				close(c)
 			}
 
 			if err != nil {
-				log.Printf("result: %v", err)
 
 				go sendGMail(f, err)
+				log.Printf("result: %v", err)
+
+				err, ok := <-c
+				if ok {
+					go sendGMail(f, err)
+					log.Printf("result: %v", err)
+				}
 			}
 
 		}(f.url)
