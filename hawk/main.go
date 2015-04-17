@@ -61,6 +61,11 @@ func main() {
 
 				err, ok := <-c
 				if ok {
+
+					if err == nil {
+						err = errors.New("timeout without error")
+					}
+
 					go sendGMail(f, err)
 					log.Printf("result: %v", err)
 				}
