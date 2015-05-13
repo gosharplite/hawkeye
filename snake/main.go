@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -13,8 +14,11 @@ import (
 )
 
 type flags struct {
-	url url.URL
+	url     url.URL
+	content []byte
 }
+
+var Dat *flags
 
 func main() {
 
@@ -26,6 +30,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("flags parsing fail: %v", err)
 	}
+
+	Dat = &f
 
 	http.HandleFunc("/", handler)
 
@@ -39,6 +45,8 @@ func getFlags() (flags, error) {
 
 	u := flag.String("url", "http://localhost:8080", "snake url")
 
+	fn := flag.String("file", "content.html", "file name")
+
 	flag.Parse()
 
 	ur, err := url.Parse(*u)
@@ -47,14 +55,24 @@ func getFlags() (flags, error) {
 		return flags{}, err
 	}
 
-	return flags{*ur}, nil
+	body, err := ioutil.ReadFile(*fn)
+	if err != nil {
+		log.Printf("ioutil.ReadFile err: %v", err)
+		body = nil
+	}
+
+	return flags{*ur, body}, nil
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Someone is looking!")
 
-	fmt.Fprint(w, r.Host+","+strconv.FormatInt(time.Now().UnixNano(), 10))
+	if Dat.content == nil {
+		fmt.Fprint(w, r.Host+","+strconv.FormatInt(time.Now().UnixNano(), 10))
+	} else {
+		fmt.Fprint(w, string(Dat.content))
+	}
 }
 
 func getPort(u url.URL) string {
