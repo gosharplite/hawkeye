@@ -20,6 +20,7 @@ type flags struct {
 	from_Gmail string
 	to_mail    string
 	password   string
+	timeout    int
 }
 
 func main() {
@@ -46,8 +47,8 @@ func main() {
 
 			select {
 
-			case <-time.After(1 * time.Second):
-				err = errors.New("timeout")
+			case <-time.After(time.Duration(f.timeout) * time.Millisecond):
+				err = errors.New("timeout: " + time.Since(t).String())
 
 			case err = <-c:
 				log.Printf("looking: " + time.Since(t).String())
@@ -63,7 +64,7 @@ func main() {
 				if ok {
 
 					if err2 == nil {
-						err2 = errors.New("timeout without error")
+						err2 = errors.New("timeout without error: " + time.Since(t).String())
 					}
 
 					go sendGMail(f, err2)
@@ -85,6 +86,7 @@ func getFlags() (flags, error) {
 	f := flag.String("f", "sender@gmail.com", "gmail sender")
 	t := flag.String("t", "receiver@example.com", "email receiver")
 	p := flag.String("p", "123456", "gmail password")
+	tout := flag.Int("timeout", 1000, "time out in milli-second")
 
 	flag.Parse()
 
@@ -106,7 +108,10 @@ func getFlags() (flags, error) {
 	//password
 	pw := *p
 
-	return flags{*ur, ca, fr, to, pw}, nil
+	// timeout
+	timeout := *tout
+
+	return flags{*ur, ca, fr, to, pw, timeout}, nil
 }
 
 func looking(url url.URL, c chan error) {
