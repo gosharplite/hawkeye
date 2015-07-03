@@ -57,7 +57,8 @@ func main() {
 
 			if err != nil {
 
-				go sendGMail(f, err)
+				alt := f.caption + " " + (time.Since(t) / time.Millisecond).String()
+				go sendGMail(f, alt, err)
 				log.Printf("result: %v", err)
 
 				err2, ok := <-c
@@ -67,7 +68,9 @@ func main() {
 						err2 = errors.New("timeout without error: " + time.Since(t).String())
 					}
 
-					go sendGMail(f, err2)
+					alt := f.caption + " " + (time.Since(t) / time.Millisecond).String()
+
+					go sendGMail(f, alt, err2)
 					log.Printf("result: %v", err2)
 				}
 			}
@@ -144,7 +147,7 @@ func looking(url url.URL, c chan error) {
 	c <- nil
 }
 
-func sendGMail(f flags, e error) {
+func sendGMail(f flags, alt string, e error) {
 
 	auth := smtp.PlainAuth(
 		"",
@@ -170,10 +173,15 @@ Subject: {{.Subject}}
 	var err error
 	var doc bytes.Buffer
 
+	ti := f.caption + " " + time.Now().Format("01/02 15:04:05")
+	if alt != "" {
+		ti = alt
+	}
+
 	context := &SmtpTemplateData{
 		f.from_Gmail,
 		f.to_mail,
-		f.caption + " " + time.Now().Format("01/02 15:04:05"),
+		ti,
 		e.Error(),
 	}
 
